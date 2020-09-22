@@ -10,15 +10,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-      with:
-        persist-credentials: false
     - name: Commit files
       run: |
+        mkdir sync
+        cd sync
+        git init
         git config --local user.email "quarkusio@xam.dk"
         git config --local user.name "Quarkus Bot"
-        git remote add wiki https://maxandersen:${{secrets.WIKI_PAT}}@github.com/maxandersen/quarkiverse.wiki.git
-        git fetch wiki
-        git merge wiki/master --no-edit
+        git remote add origin https://maxandersen:${{secrets.WIKI_PAT}}@github.com/maxandersen/quarkiverse-wiki.git
+        git remote add upstream https://maxandersen:${{secrets.WIKI_PAT}}@github.com/maxandersen/quarkiverse.wiki.git
+        git fetch origin
+        git fetch upstream
+        git merge upstream/master --no-edit
         git push origin HEAD:master
-        git push wiki HEAD:master
+        git push upstream HEAD:master
