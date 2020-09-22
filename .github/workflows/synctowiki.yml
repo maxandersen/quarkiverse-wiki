@@ -1,0 +1,24 @@
+# This workflow simply syncs the wiki repo to real wiki.
+
+name: sync-to-wiki
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        persist-credentials: false
+    - name: Commit files
+      run: |
+        git config --local user.email "quarkusio@xam.dk"
+        git config --local user.name "Quarkus Bot"
+        git remote add wiki https://maxandersen:${{secrets.WIKI_PAT}}@github.com/maxandersen/quarkiverse.wiki.git
+        git fetch wiki
+        git merge wiki/master --no-edit
+        git push origin HEAD:master > /dev/null 2>&1
+        git push wiki HEAD:master > /dev/null 2>&1
