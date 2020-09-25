@@ -1,26 +1,48 @@
-# This workflow simply syncs the wiki repo to real wiki.
-
-name: sync-to-wiki
+name: sync-wiki
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
+  repository_dispatch:
+    types: [docs]
+  gollum:
+
+env:
+  GIT_AUTHOR_NAME: quarkusbot
+  GIT_AUTHOR_EMAIL: quarkusbot@xam.dk
 
 jobs:
-  build:
+  job-sync-docs-to-wiki:
     runs-on: ubuntu-latest
+    if: github.event_name != 'gollum'
     steps:
-    - name: Commit files
-      run: |
-        mkdir sync
-        cd sync
-        git init
-        git config --local user.email "quarkusio@xam.dk"
-        git config --local user.name "Quarkus Bot"
-        git remote add origin https://maxandersen:${{secrets.WIKI_PAT}}@github.com/maxandersen/quarkiverse-wiki.git
-        git remote add upstream https://maxandersen:${{secrets.WIKI_PAT}}@github.com/maxandersen/quarkiverse.wiki.git
-        git fetch origin
-        git fetch upstream
-        git merge origin/master --no-edit
-        git push origin HEAD:master
-        git push upstream HEAD:master
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Sync docs to wiki
+        uses: newrelic/wiki-sync-action@master
+        with:
+          source: docs
+          destination: wiki
+          token: ${{ secrets.WIKI_PAT }}
+          gitAuthorName: ${{ env.GIT_AUTHOR_NAME }}
+          gitAuthorEmail: ${{ env.GIT_AUTHOR_EMAIL }}
+  
+  job-sync-wiki-to-docs:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'gollum'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.WIKI_PAT }} # allows us to push back to repo
+          ref: master
+      - name: Sync Wiki to Docs
+        uses: newrelic/wiki-sync-action@master
+        with:
+          source: wiki
+          destination: docs
+          token: ${{ secrets.NEWRELIC_BOT_TOKEN }}
+          gitAuthorName: ${{ env.GIT_AUTHOR_NAME }}
+          gitAuthorEmail: ${{ env.GIT_AUTHOR_EMAIL }}
+          branch: master # since default branch is develop in this example
